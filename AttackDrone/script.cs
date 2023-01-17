@@ -13,11 +13,10 @@ namespace Mod
                     NameOverride = "Attack Drone",
                     DescriptionOverride = "It flies.",
                     CategoryOverride = ModAPI.FindCategory("Vehicles"),
-                    ThumbnailOverride = ModAPI.LoadSprite("thumb.png"),
+                    ThumbnailOverride = ModAPI.LoadSprite("preview.png"),
                     AfterSpawn = (Instance) =>
                     {
                         Instance.GetComponent<SpriteRenderer>().sprite = ModAPI.LoadSprite("droneOff.png");
-                        Instance.GetComponent<Transform>().localScale = new Vector3(1f, 1f, 1f);
                         Instance.GetComponent<BoxCollider2D>().size= new Vector2(1.75f, 0.4f);
                         Instance.AddComponent<Drone>();
                         Instance.GetComponent<Drone>().offSprite=ModAPI.LoadSprite("droneOff.png");
@@ -27,6 +26,10 @@ namespace Mod
                         Instance.AddComponent<AudioSource>().clip=clip;
                         Instance.GetComponent<AudioSource>().loop=true;
                         Instance.GetComponent<AudioSource>().volume=0.25f;
+
+                        Instance.GetComponent<PhysicalBehaviour>().Properties.Burnrate=0f;
+                        Instance.GetComponent<PhysicalBehaviour>().Properties.Flammability=0f;
+                        Instance.GetComponent<PhysicalBehaviour>().Properties.HeatTransferSpeedMultiplier=0.1f;
 
                         Instance.AddComponent<UseEventTrigger>().Action = Instance.GetComponent<Drone>().ToggleOn;
                     }
@@ -67,7 +70,10 @@ namespace Mod
             firearm = GameObject.Instantiate(ModAPI.FindSpawnable("Pistol").Prefab, transform.position, transform.rotation).GetComponent<FirearmBehaviour>();
             firearm.GetComponent<PhysicalBehaviour>().rigidbody.isKinematic=true;
             foreach(Collider2D c in firearm.GetComponent<PhysicalBehaviour>().colliders){c.enabled=false;}
-            firearm.Cartridge.Recoil*=4;
+            
+            Cartridge lowCart = ModAPI.FindCartridge("9mm");
+            lowCart.Recoil=0f;
+            firearm.Cartridge=lowCart;
             firearm.IgnoreUse=true;
 
             firearm.GetComponent<SpriteRenderer>().sprite = gunSprite;
@@ -85,9 +91,12 @@ namespace Mod
             blaster = GameObject.Instantiate(ModAPI.FindSpawnable("Sniper Rifle").Prefab, firearm.transform.position, firearm.transform.rotation).GetComponent<FirearmBehaviour>();
             blaster.GetComponent<PhysicalBehaviour>().rigidbody.isKinematic=true;
             foreach(Collider2D c in blaster.GetComponent<PhysicalBehaviour>().colliders){c.enabled=false;}
-            blaster.Cartridge.Damage*=3;
-            blaster.Cartridge.Recoil*=5;
-            blaster.Cartridge.ImpactForce*=3;
+            
+            Cartridge highCart = ModAPI.FindCartridge("30 mm");
+            highCart.Recoil=0f;
+            highCart.Damage*=0.25f;
+            blaster.Cartridge=highCart;
+
             blaster.transform.localScale=new Vector3(0.5f, 0.5f, 0.5f);
             blaster.transform.parent=pivot;
             blaster.GetComponent<SpriteRenderer>().sprite = gunSprite;
@@ -117,13 +126,15 @@ namespace Mod
                 {
                     case 0:
                         firearm.Shoot();
+                        rb.AddForce(currentWeapon.right*-250f*Time.deltaTime, ForceMode2D.Impulse);
                         break;
                     case 1:
                         blaster.Shoot();
+                        rb.AddForce(currentWeapon.right*-1000f*Time.deltaTime, ForceMode2D.Impulse);
                         break;
                     case 2:
                         beam.Shoot();
-                        rb.AddForce(currentWeapon.right*-1500f*Time.deltaTime, ForceMode2D.Impulse); //for some reason the beam cannon does not apply recoil to the drone on its own
+                        rb.AddForce(currentWeapon.right*-1500f*Time.deltaTime, ForceMode2D.Impulse);
                         break;
                 }
             }
